@@ -1,0 +1,23 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "",
+	"Description": "",
+	"Category": "Other",
+	"CreatedBy": "UPO33",
+	"CreatedByURL": "",
+	"DocsURL": "https://github.com/UPO33/UE4JwRPC",
+	"MarketplaceURL": "",
+	"SupportURL": "https://github.com/UPO33/UE4JwRPC",
+	"CanContainContent": true,
+	"IsBetaVersion": true,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "JwRPC",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		},
+	]
+}
