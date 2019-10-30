@@ -1,7 +1,7 @@
 # UE4JwRPC
 UE4 JSON-RPC client over Websocket
 
-# WIP don use it yet
+# WIP don't use it 
 
 # Featues 
 	- Has APIs for both blueprint and c++. one intance can be shared.
