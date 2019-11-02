@@ -68,6 +68,11 @@ void UJwRpcConnection::Request(const FString& method, const FString& params, Suc
 	Requests.Add(id, MoveTemp(req));
 }
 
+void UJwRpcConnection::Request(const FString& method, TSharedPtr<FJsonValue> params, SuccessCB onSuccess, ErrorCB onError)
+{
+	return Request(method, HelperStringifyJSON(params), onSuccess, onError);
+}
+
 void UJwRpcConnection::Notify(const FString& method, const FString& params)
 {
 	if (Connection && Connection->IsConnected())
@@ -78,14 +83,19 @@ void UJwRpcConnection::Notify(const FString& method, const FString& params)
 	}
 }
 
+void UJwRpcConnection::Notify(const FString& method, TSharedPtr<FJsonValue> params)
+{
+	return Notify(method, HelperStringifyJSON(params));
+}
+
 void UJwRpcConnection::K2_Notify(const FString& method, const FString& params)
 {
-	Notify(method, params);
+	return Notify(method, params);
 }
 
 void UJwRpcConnection::K2_Request(const FString& method, const FString& params, FOnRPCResult onSuccess, FOnRPCError onError)
 {
-	Request(method, params, [onSuccess](TSharedPtr<FJsonValue> result) {
+	return Request(method, params, [onSuccess](TSharedPtr<FJsonValue> result) {
 		//#TODO
 
 	}, [onError](const FJwRPCError& err) {
@@ -101,7 +111,7 @@ void UJwRpcConnection::K2_NotifyJSON(const FString& method, const UJsonValue* pa
 		return ;
 	}
 
-	Notify(method, params->ToString(false));
+	return Notify(method, params->ToString(false));
 }
 
 void UJwRpcConnection::K2_RequestJSON(const FString& method, const UJsonValue* params, FOnRPCResultJSON onSuccess, FOnRPCError onError)
@@ -126,7 +136,7 @@ void UJwRpcConnection::K2_RequestJSON(const FString& method, const UJsonValue* p
 	});
 }
 
-void UJwRpcConnection::Close(int Code, const FString& Reason)
+void UJwRpcConnection::Close(int Code, FString Reason)
 {
 	if (Connection)
 	{

@@ -18,7 +18,13 @@ public class JwRPC : ModuleRules
 		PublicDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"Core",
+                "CoreUObject",
+                "Engine",
+                "Core",
+                "WebSockets",
+                "Json",
+                "JsonUtilities",
+                "JsonBP",
 				// ... add other public dependencies that you statically link with here ...
 			});
 			
@@ -26,12 +32,9 @@ public class JwRPC : ModuleRules
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"CoreUObject",
-                "Engine",
-				"WebSockets",
-                "Json",
-                "JsonUtilities",
-                "JsonBP",
+
+				
+                
 				// ... add private dependencies that you statically link with here ...	
 			});
     }

@@ -78,7 +78,7 @@ DECLARE_DYNAMIC_DELEGATE(FOnConnectSuccess);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnConnectFailed, const FString&, result);
 
 UCLASS(BlueprintType, Blueprintable)
-class UJwRpcConnection : public UObject, public FTickableGameObject
+class JWRPC_API UJwRpcConnection : public UObject, public FTickableGameObject
 {
 	GENERATED_BODY()
 public:
@@ -97,7 +97,9 @@ public:
 	UJwRpcConnection();
 
 	void Request(const FString& method, const FString& params, SuccessCB onSuccess, ErrorCB onError);
+	void Request(const FString& method, TSharedPtr<FJsonValue> params, SuccessCB onSuccess, ErrorCB onError);
 	void Notify(const FString& method, const FString& params);
+	void Notify(const FString& method, TSharedPtr<FJsonValue> params);
 
 	UFUNCTION(BlueprintCallable, meta=(DisplayName="Notify"))
 	void K2_Notify(const FString& method, const FString& params);
@@ -111,7 +113,7 @@ public:
 
 
 	UFUNCTION(BlueprintCallable)
-	void Close(int Code, const FString& Reason);
+	void Close(int Code = 1000, FString Reason = "");
 
 	static void Test0();
 
@@ -155,8 +157,14 @@ public:
 	void TryReconnect();
 
 
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable,meta=(DeterminesOutputType="connectionClass"))
 	static UJwRpcConnection* CreateAndConnect(const FString& url, TSubclassOf<UJwRpcConnection> connectionClass);
+
+	//template version for c++
+	template <class TConnectionClass > static TConnectionClass* CreateAndConnect(const FString& url)
+	{
+		return (TConnectionClass*)CreateAndConnect(url, TConnectionClass::StaticClass());
+	}
 
 	/*
 	this is called when we connect for the first time or reconnection happens.
@@ -172,11 +180,11 @@ public:
 	*/
 	virtual void OnClosed(int32 StatusCode, const FString& Reason, bool bWasClean);
 
-	UFUNCTION(BlueprintImplementableEvent)
+	UFUNCTION(BlueprintImplementableEvent, meta=(DisplayName="OnConnected"))
 	void K2_OnConnected(bool bReconnect);
-	UFUNCTION(BlueprintImplementableEvent)
+	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "OnConnectionError"))
 	void K2_OnConnectionError(const FString& error);
-	UFUNCTION(BlueprintImplementableEvent)
+	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "OnClosed"))
 	void K2_OnClosed(int32 StatusCode, const FString& Reason, bool bWasClean);
 
 	//static UJwRpcConnection* K2_Connect(const FString& url, FOnConnectSuccess onSucess, FOnConnectFailed onError);
