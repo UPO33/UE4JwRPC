@@ -30,7 +30,7 @@ UJwRpcConnection::UJwRpcConnection()
 }
 
 
-void UJwRpcConnection::Request(const FString& method, const FString& params, SuccessCB onSuccess, ErrorCB onError)
+void UJwRpcConnection::Request(const FString& method, const FString& params, FSuccessCB onSuccess, FErrorCB onError)
 {
 	FString id = GenId();
 
@@ -61,21 +61,25 @@ void UJwRpcConnection::Request(const FString& method, const FString& params, Suc
 	//}
 
 	const FString finalData = FString::Printf(TEXT(R"({"id":"%s","method":"%s","params":%s})"), *id, *method, *params);
-	Connection->Send(finalData);
+	if (Connection)
+	{
+		Connection->Send(finalData);
+	}
 	
 	UE_LOG(LogJwRPC, Warning, TEXT("OutgingData:%s"), *finalData);
 
 	Requests.Add(id, MoveTemp(req));
 }
 
-void UJwRpcConnection::Request(const FString& method, TSharedPtr<FJsonValue> params, SuccessCB onSuccess, ErrorCB onError)
+void UJwRpcConnection::Request(const FString& method, TSharedPtr<FJsonValue> params, FSuccessCB onSuccess, FErrorCB onError)
 {
-	return Request(method, HelperStringifyJSON(params), onSuccess, onError);
+	return Request(method, params ? HelperStringifyJSON(params) : FString(), onSuccess, onError);
 }
+
 
 void UJwRpcConnection::Notify(const FString& method, const FString& params)
 {
-	if (Connection && Connection->IsConnected())
+	if (Connection)
 	{
 		const FString finalData = FString::Printf(TEXT(R"({"method":"%s","params":%s})"), *method, *params);
 		Connection->Send(finalData);
@@ -85,7 +89,7 @@ void UJwRpcConnection::Notify(const FString& method, const FString& params)
 
 void UJwRpcConnection::Notify(const FString& method, TSharedPtr<FJsonValue> params)
 {
-	return Notify(method, HelperStringifyJSON(params));
+	return Notify(method, params ? HelperStringifyJSON(params) : FString());
 }
 
 void UJwRpcConnection::K2_Notify(const FString& method, const FString& params)
@@ -95,45 +99,34 @@ void UJwRpcConnection::K2_Notify(const FString& method, const FString& params)
 
 void UJwRpcConnection::K2_Request(const FString& method, const FString& params, FOnRPCResult onSuccess, FOnRPCError onError)
 {
-	return Request(method, params, [onSuccess](TSharedPtr<FJsonValue> result) {
-		//#TODO
+	return Request(method, params, FSuccessCB::CreateLambda([onSuccess](TSharedPtr<FJsonValue> result) {
+		//
+		FString resultStringified = HelperStringifyJSON(result);
+		onSuccess.ExecuteIfBound(resultStringified);
 
-	}, [onError](const FJwRPCError& err) {
+	}), FErrorCB::CreateLambda([onError](const FJwRPCError& err) {
+		//
 		onError.ExecuteIfBound(err);
-	});
+	}));
 }
 
 void UJwRpcConnection::K2_NotifyJSON(const FString& method, const UJsonValue* params)
 {
-	if (!params) 
-	{
-		//#TODO LOG
-		return ;
-	}
-
-	return Notify(method, params->ToString(false));
+	return Notify(method, params ? params->ToString(false) : FString());
 }
 
 void UJwRpcConnection::K2_RequestJSON(const FString& method, const UJsonValue* params, FOnRPCResultJSON onSuccess, FOnRPCError onError)
 {
-	if (!params)
-	{
-		//#TODO LOG
-		return;
-	}
+	Request(method, params ? params->ToString(false) : FString(), FSuccessCB::CreateLambda([onSuccess](TSharedPtr<FJsonValue> result) {
+		//
+		UJsonValue* blueprinted = UJsonValue::MakeFromCPPVersion(result);
+		if (ensureAlways(blueprinted))
+			onSuccess.ExecuteIfBound(blueprinted);
 
-	Request(method, params->ToString(false), [onSuccess](TSharedPtr<FJsonValue> result) {
-		UJsonValue* bped = UJsonValue::MakeFromCPPVersion(result);
-		if (!bped) 
-		{
-		}
-		else
-		{
-			onSuccess.ExecuteIfBound(bped);
-		}
-	}, [onError](const FJwRPCError & err) {
-			onError.ExecuteIfBound(err);
-	});
+	}), FErrorCB::CreateLambda([onError](const FJwRPCError & err) {
+		//
+		onError.ExecuteIfBound(err);
+	}));
 }
 
 void UJwRpcConnection::Close(int Code, FString Reason)
@@ -145,18 +138,9 @@ void UJwRpcConnection::Close(int Code, FString Reason)
 	}
 }
 
-void UJwRpcConnection::Test0()
-{
-	UJwRpcConnection* pConn = nullptr;
-	pConn->Request("req1", "[]", nullptr, nullptr);
-	pConn->Notify("noti1", "{}");
 
 
-
-	
-}
-
-void UJwRpcConnection::RegisterNotificationCallback(FString method, FNotificationDD callback)
+void UJwRpcConnection::RegisterNotificationCallback(const FString& method, FNotificationDD callback)
 {
 	FMethodData md;
 	md.bIsNotification = true;
@@ -164,7 +148,7 @@ void UJwRpcConnection::RegisterNotificationCallback(FString method, FNotificatio
 	RegisteredCallbacks.Add(method, md);
 }
 
-void UJwRpcConnection::RegisterNotificationCallback(FString method, FNotifyCallbackBase callback)
+void UJwRpcConnection::RegisterNotificationCallback(const FString& method, FNotifyCallbackBase callback)
 {
 	FMethodData md;
 	md.bIsNotification = true;
@@ -172,7 +156,7 @@ void UJwRpcConnection::RegisterNotificationCallback(FString method, FNotifyCallb
 	RegisteredCallbacks.Add(method, md);
 }
 
-void UJwRpcConnection::RegisterRequestCallback(FString method, FRequestDD callback)
+void UJwRpcConnection::RegisterRequestCallback(const FString& method, FRequestDD callback)
 {
 	FMethodData md;
 	md.bIsNotification = false;
@@ -180,7 +164,7 @@ void UJwRpcConnection::RegisterRequestCallback(FString method, FRequestDD callba
 	RegisteredCallbacks.Add(method, md);
 }
 
-void UJwRpcConnection::RegisterRequestCallback(FString method, FRequestCallbackBase callback)
+void UJwRpcConnection::RegisterRequestCallback(const FString& method, FRequestCallbackBase callback)
 {
 	FMethodData md;
 	md.bIsNotification = false;
@@ -265,7 +249,7 @@ UJwRpcConnection* UJwRpcConnection::CreateAndConnect(const FString& url, TSubcla
 	//FWebSocketsModule::Get() retuned null on no editor builds
 	TSharedRef<IWebSocket> wsc = wsModule.CreateWebSocket(url);
 
-	wsc->OnConnectionError().AddUObject(pConn, &UJwRpcConnection::OnConnectionError);
+	wsc->OnConnectionError().AddUObject(pConn, &UJwRpcConnection::InternalOnConnectionError);
 	wsc->OnConnected().AddUObject(pConn, &UJwRpcConnection::InternalOnConnect);
 	//#Note OnMessage must be binned before Connect()
 	wsc->OnMessage().AddUObject(pConn, &UJwRpcConnection::OnMessage);
@@ -282,14 +266,18 @@ UJwRpcConnection* UJwRpcConnection::CreateAndConnect(const FString& url, TSubcla
 
 void UJwRpcConnection::OnConnected(bool bReconnect)
 {
+	UE_LOG(LogJwRPC, Log, TEXT("UJwRpcConnection::OnConnectionError bReconnect:%d"), bReconnect);
+
 	K2_OnConnected(bReconnect);
 }
 
-void UJwRpcConnection::OnConnectionError(const FString& error)
+void UJwRpcConnection::OnConnectionError(const FString& error, bool bReconnect)
 {
+	UE_LOG(LogJwRPC, Error, TEXT("UJwRpcConnection::OnConnectionError Error:%s bReconnect:%d"), *error, bReconnect);
+
 	LastConnectionErrorTime = TimeSinceStart;
 	bConnecting = false;
-	K2_OnConnectionError(error);
+	K2_OnConnectionError(error, bReconnect);
 }
 
 //UJwRpcConnection* UJwRpcConnection::K2_Connect(const FString& url, FOnConnectSuccess onSucess, FOnConnectFailed onError)
@@ -303,11 +291,11 @@ void UJwRpcConnection::OnConnectionError(const FString& error)
 
 void UJwRpcConnection::BeginDestroy()
 {
-	UE_LOG(LogJwRPC, Error, TEXT("UJwRpcConnection::BeginDestroy"));
+	UE_LOG(LogJwRPC, Log, TEXT("UJwRpcConnection::BeginDestroy"));
 
 	Super::BeginDestroy();
 
-	Close(100, FString());
+	Close(1001);
 }
 
 FString UJwRpcConnection::GenId()
@@ -332,6 +320,9 @@ FJwRPCError JsonToJwError(TSharedPtr<FJsonObject> js)
 void UJwRpcConnection::OnMessage(const FString& data)
 {
 	static FString STR_error("error");
+	static FString STR_method("method");
+	static FString STR_id("id");
+	static FString STR_result("result");
 
 	UE_LOG(LogJwRPC, Warning, TEXT("UJwRpcConnection::OnMessage:%s"), *data);
 
@@ -343,13 +334,13 @@ void UJwRpcConnection::OnMessage(const FString& data)
 		return;
 	}
 
-	if (JsonObject->HasField(TEXT("method"))) //is it request?
+	if (JsonObject->HasField(STR_method)) //is it request?
 	{
 		OnRequestRecv(JsonObject);
 	}
-	else
+	else //otherwise its respond
 	{
-		FString id = JsonObject->GetStringField("id");
+		FString id = JsonObject->GetStringField(STR_id);
 		FRequest* pRequest = Requests.Find(id);
 		if (!pRequest)
 		{
@@ -358,21 +349,19 @@ void UJwRpcConnection::OnMessage(const FString& data)
 		}
 
 
-		if (JsonObject->HasField(TEXT("error"))) //is it error respond?
+		if (JsonObject->HasField(STR_error)) //is it error respond?
 		{
-			if (pRequest->OnError)
+			if (pRequest->OnError.IsBound())
 			{
 				FJwRPCError errStruct = JsonToJwError(JsonObject->GetObjectField(STR_error));
-				pRequest->OnError(errStruct);
-				pRequest->OnError = nullptr;
+				pRequest->OnError.Execute(errStruct);
 			}
 		}
-
-		if (JsonObject->HasField(TEXT("result"))) //is it valid respond?
+		else if (JsonObject->HasField(STR_result)) //is it valid respond?
 		{
-			if (pRequest->OnResult)
+			if (pRequest->OnResult.IsBound())
 			{
-				pRequest->OnResult(JsonObject->TryGetField(TEXT("result")));
+				pRequest->OnResult.Execute(JsonObject->TryGetField(STR_result));
 				pRequest->OnResult = nullptr;
 			}
 		}
@@ -393,9 +382,14 @@ void UJwRpcConnection::InternalOnConnect()
 	bFirstConnect = false;
 }
 
+void UJwRpcConnection::InternalOnConnectionError(const FString& error)
+{
+	OnConnectionError(error, !bFirstConnect);
+}
+
 void UJwRpcConnection::OnClosed(int32 StatusCode, const FString& Reason, bool bWasClean)
 {
-	UE_LOG(LogJwRPC, Error, TEXT("UJwRpcConnection::OnClosed StatusCode:%d Reason:%s bWasClean:%d"), StatusCode, *Reason, bWasClean);
+	UE_LOG(LogJwRPC, Log, TEXT("UJwRpcConnection::OnClosed StatusCode:%d Reason:%s bWasClean:%d"), StatusCode, *Reason, bWasClean);
 
 	LastDisconnectTime = TimeSinceStart;
 	bConnecting = false;
@@ -411,8 +405,7 @@ void UJwRpcConnection::KillAll(const FJwRPCError& error)
 {
 	for (auto& pair : Requests)
 	{
-		if (pair.Value.OnError)
-			pair.Value.OnError(error);
+		pair.Value.OnError.ExecuteIfBound(error);
 	}
 
 	Requests.Reset();
@@ -426,15 +419,16 @@ void UJwRpcConnection::CheckExpiredRequests()
 
 	LastExpireCheckTime = TimeSinceStart;
 
-	TArray<FString> expired;
+	static TArray<FString> expired;
+	expired.Reset();
+
 	for (auto& pair : Requests)
 	{
 		if (TimeSinceStart > pair.Value.ExpireTime)
 		{
 			expired.Add(pair.Key);
 
-			if (pair.Value.OnError)
-				pair.Value.OnError(FJwRPCError::Timeout);
+			pair.Value.OnError.ExecuteIfBound(FJwRPCError::Timeout);
 		}
 	}
 
@@ -475,7 +469,7 @@ TStatId UJwRpcConnection::GetStatId() const
 	return TStatId();
 }
 
-void UJwRpcConnection::OnRequestRecv(TSharedPtr<FJsonObject>& root)
+void UJwRpcConnection::OnRequestRecv(TSharedPtr<FJsonObject> root)
 {
 	static FString STR_method("method");
 	static FString STR_params("params");
@@ -531,23 +525,17 @@ void FJwRpcIncomingRequest::FinishError(const FJwRPCError& error) const
 	}
 }
 
-template<class CharType, class PrintPolicy>
-bool ToJsonStringInternal(TSharedPtr<FJsonValue> JsonObject, FString& OutJsonString)
+
+
+void FJwRpcIncomingRequest::FinishError(int code, const FString& message) const
 {
-	TSharedRef<TJsonWriter<CharType, PrintPolicy> > JsonWriter = TJsonWriterFactory<CharType, PrintPolicy>::Create(&OutJsonString, 0);
-	bool bSuccess = FJsonSerializer::Serialize(JsonObject, FString(), JsonWriter);
-	JsonWriter->Close();
-	return bSuccess;
+	FinishError(FJwRPCError{ code, message });
 }
 
 void FJwRpcIncomingRequest::FinishSuccess(TSharedPtr<FJsonValue> result) const
 {
-	if (result)
-	{
-		FString resultString  = HelperStringifyJSON(result, false);
-		if(!resultString.IsEmpty())
-			FinishSuccess(resultString);
-	}
+	FString resultString  = HelperStringifyJSON(result, false);
+	FinishSuccess(resultString);
 }
 
 void FJwRpcIncomingRequest::FinishSuccess(const FString& result) const
