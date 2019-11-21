@@ -26,7 +26,7 @@ DEFINE_LOG_CATEGORY(LogJwRPC)
 
 UJwRpcConnection::UJwRpcConnection()
 {
-
+	//UE_SET_LOG_VERBOSITY(LogJwRPC, NoLogging);
 }
 
 
@@ -140,7 +140,7 @@ void UJwRpcConnection::Close(int Code, FString Reason)
 
 
 
-void UJwRpcConnection::RegisterNotificationCallback(const FString& method, FNotificationDD callback)
+void UJwRpcConnection::K2_RegisterNotificationCallback(const FString& method, FNotificationDD callback)
 {
 	FMethodData md;
 	md.bIsNotification = true;
@@ -148,7 +148,7 @@ void UJwRpcConnection::RegisterNotificationCallback(const FString& method, FNoti
 	RegisteredCallbacks.Add(method, md);
 }
 
-void UJwRpcConnection::RegisterNotificationCallback(const FString& method, FNotifyCallbackBase callback)
+void UJwRpcConnection::RegisterNotificationCallback(const FString& method, FNotifyCB callback)
 {
 	FMethodData md;
 	md.bIsNotification = true;
@@ -156,7 +156,7 @@ void UJwRpcConnection::RegisterNotificationCallback(const FString& method, FNoti
 	RegisteredCallbacks.Add(method, md);
 }
 
-void UJwRpcConnection::RegisterRequestCallback(const FString& method, FRequestDD callback)
+void UJwRpcConnection::K2_RegisterRequestCallback(const FString& method, FRequestDD callback)
 {
 	FMethodData md;
 	md.bIsNotification = false;
@@ -164,7 +164,7 @@ void UJwRpcConnection::RegisterRequestCallback(const FString& method, FRequestDD
 	RegisteredCallbacks.Add(method, md);
 }
 
-void UJwRpcConnection::RegisterRequestCallback(const FString& method, FRequestCallbackBase callback)
+void UJwRpcConnection::RegisterRequestCallback(const FString& method, FRequestCB callback)
 {
 	FMethodData md;
 	md.bIsNotification = false;
@@ -191,17 +191,17 @@ void UJwRpcConnection::Send(const FString& data)
 	}
 }
 
-void UJwRpcConnection::IncomingRequestFinishError(const FJwRpcIncomingRequest& request, const FJwRPCError& error)
+void UJwRpcConnection::K2_IncomingRequestFinishError(const FJwRpcIncomingRequest& request, const FJwRPCError& error)
 {
 	request.FinishError(error);
 }
 
-void UJwRpcConnection::IncomingRequestFinishSuccess(const FJwRpcIncomingRequest& request, const FString& result)
+void UJwRpcConnection::K2_IncomingRequestFinishSuccess(const FJwRpcIncomingRequest& request, const FString& result)
 {
 	request.FinishSuccess(result);
 }
 
-void UJwRpcConnection::IncomingRequestFinishSuccessJSON(const FJwRpcIncomingRequest& request, const UJsonValue* result)
+void UJwRpcConnection::K2_IncomingRequestFinishSuccessJSON(const FJwRpcIncomingRequest& request, const UJsonValue* result)
 {
 	if (result)
 		request.FinishSuccess(result->ToString(false));
@@ -260,6 +260,8 @@ UJwRpcConnection* UJwRpcConnection::CreateAndConnect(const FString& url, TSubcla
 	pConn->bConnecting = true;
 	pConn->LastConnectAttempTime = 0;
 
+	UE_LOG(LogJwRPC, Log, TEXT("connecting to %s"), *url);
+
 	wsc->Connect();
 	return pConn;
 }
@@ -291,8 +293,6 @@ void UJwRpcConnection::OnConnectionError(const FString& error, bool bReconnect)
 
 void UJwRpcConnection::BeginDestroy()
 {
-	UE_LOG(LogJwRPC, Log, TEXT("UJwRpcConnection::BeginDestroy"));
-
 	Super::BeginDestroy();
 
 	Close(1001);
@@ -427,7 +427,7 @@ void UJwRpcConnection::CheckExpiredRequests()
 		if (TimeSinceStart > pair.Value.ExpireTime)
 		{
 			expired.Add(pair.Key);
-
+			UE_LOG(LogJwRPC, Log, TEXT("request timed out. id:%s"), *pair.Key);
 			pair.Value.OnError.ExecuteIfBound(FJwRPCError::Timeout);
 		}
 	}

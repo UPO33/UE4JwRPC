@@ -77,66 +77,138 @@ DECLARE_DYNAMIC_DELEGATE_ThreeParams(FRequestDD, UJwRpcConnection*, connection, 
 DECLARE_DYNAMIC_DELEGATE(FOnConnectSuccess);
 DECLARE_DYNAMIC_DELEGATE_OneParam(FOnConnectFailed, const FString&, result);
 
+/*
+JSON-RPC2 over websocket client.
 
+an instance of this class represents a connection to server. most functions can be used in both Blueprint and C++.
+
+
+you usually inherit from this class and add your own functions.
+then create an instance and connect to server by 'UJwRpcConnection::CreateAndConnect'
+
+*/
 UCLASS(BlueprintType, Blueprintable)
 class JWRPC_API UJwRpcConnection : public UObject, public FTickableGameObject
 {
 	GENERATED_BODY()
 public:
 
-	typedef FString FMethodName;
-
-
-	DECLARE_DELEGATE_OneParam(FErrorCB, const FJwRPCError& /*error*/);
+	//delegate for successful result of requests
 	DECLARE_DELEGATE_OneParam(FSuccessCB, TSharedPtr<FJsonValue> /*result*/);
+	//delegate for failure of requests
+	DECLARE_DELEGATE_OneParam(FErrorCB, const FJwRPCError& /*error*/);
+	
+	//
 	DECLARE_DELEGATE(FEmptyCB);
 
-	DECLARE_DELEGATE_OneParam(FNotifyCallbackBase, TSharedPtr<FJsonValue> /*params*/);
-	DECLARE_DELEGATE_TwoParams(FRequestCallbackBase, TSharedPtr<FJsonValue> /*params*/, FJwRpcIncomingRequest&);
+	//delegate for incoming notifications
+	DECLARE_DELEGATE_OneParam(FNotifyCB, TSharedPtr<FJsonValue> /*params*/);
+	//delegate for incoming requests
+	DECLARE_DELEGATE_TwoParams(FRequestCB, TSharedPtr<FJsonValue> /*params*/, FJwRpcIncomingRequest& /*requestHandle*/);
 
 
 	UJwRpcConnection();
 
 	/*
-	sends a request to the server.
-	@param method		- the requesting method
+	send a request to the server.
+	@param method		- name of method
 	@param params		- the string containing any json value. object, array, string, number, ...
-	@param onSuccess	- callback to be called when result is arrived
+	@param onSuccess	- callback to be called when result arrives
 	@param onError		- callback to be called if any type of error happened. 
 	*/
 	void Request(const FString& method, const FString& params, FSuccessCB onSuccess = nullptr, FErrorCB onError = nullptr);
 	/*
-	sends a request to the server.
-	@param method		- the requesting method
+	send a request to the server.
+	@param method		- name of method
 	@param params		- the shared pointer contacting any json value. object, array, string, number, ...
+	@param onSuccess	- callback to be called when result arrives
+	@param onError		- callback to be called if any type of error happened.
 	*/
 	void Request(const FString& method, TSharedPtr<FJsonValue> params, FSuccessCB onSuccess = nullptr, FErrorCB onError = nullptr);
 	/*
-	sends a notification to server.
+	send a notification to server.
 	*/
 	void Notify(const FString& method, const FString& params);
 	/*
-	sends a notification to server.
+	send a notification to server.
 	*/
 	void Notify(const FString& method, TSharedPtr<FJsonValue> params);
-
+	/*
+	register a notification callback.
+	*/
+	void RegisterNotificationCallback(const FString& method, FNotifyCB callback);
+	/*
+	register a request callback.
+	*/
+	void RegisterRequestCallback(const FString& method, FRequestCB callback);
 
 	/*
+	send a notification to server.
+	@param	method	- name of the method
+	@param	params	- the string containing any valid json value. object, array, string, number, ... 
 	*/
 	UFUNCTION(BlueprintCallable, meta=(DisplayName="Notify (string)"))
 	void K2_Notify(const FString& method, const FString& params);
 	/*
+	send a request to the server.
+	@param method		- name of the requesting method
+	@param params		- the string containing any json value. object, array, string, number, ...
+	@param onSuccess	- callback to be called when result arrives
+	@param onError		- callback to be called if any type of error happened.
 	*/
 	UFUNCTION(BlueprintCallable, meta=(DisplayName="Request (string)"))
 	void K2_Request(const FString& method, const FString& params, FOnRPCResult onSuccess, FOnRPCError onError);
 	/*
+	send a notification to server.
+	@param	method	- name of the method
+	@param	params	- the object containing any valid json value. object, array, string, number, ...
 	*/
 	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Notify (json)"))
 	void K2_NotifyJSON(const FString& method, const UJsonValue* params);
 	/*
+	send a request to the server.
+	@param method		- name of the requesting method
+	@param params		- the object containing any json value. object, array, string, number, ...
+	@param onSuccess	- callback to be called when result arrives
+	@param onError		- callback to be called if any type of error happened.
 	*/
 	UFUNCTION(BlueprintCallable, meta = (DisplayName = "Request (json)"))
 	void K2_RequestJSON(const FString& method, const UJsonValue* params, FOnRPCResultJSON onSuccess, FOnRPCError onError);
+	/*
+	register a notification callback.
+	@param  method		name of the method
+	@param  callback	callback to be called when we receive such a notification
+	*/
+	UFUNCTION(BlueprintCallable, meta = (DisplayName = "RegisterNotificationCallback"))
+	void K2_RegisterNotificationCallback(const FString& method, FNotificationDD callback);
+	/*
+	register a request callback. the invoked callback should call FinishSucces() or FinishError() to send the result
+	@param  method		name of the method
+	@param  callback	callback to be called when we receive such a request
+	*/
+	UFUNCTION(BlueprintCallable, meta = (DisplayName = "RegisterRequestCallback"))
+	void K2_RegisterRequestCallback(const FString& method, FRequestDD callback);
+
+
+	/*
+	finish a pending request by sending error to the peer.
+	*/
+	UFUNCTION(BlueprintCallable, meta = (DisplayName = "FinishError"))
+	static void K2_IncomingRequestFinishError(const FJwRpcIncomingRequest& request, const FJwRPCError& error);
+	UFUNCTION(BlueprintCallable, meta = (DisplayName = "FinishSuccess"))
+	/*
+	finish a pending request by sending result.
+	@param result		the result to be sent to server. string containing json value. ( object, array, number, ... )
+	*/
+	static void K2_IncomingRequestFinishSuccess(const FJwRpcIncomingRequest& request, const FString& result);
+	/*
+	finish a pending request by sending result.
+	@param result	the result object to be sent to the server
+	
+	*/
+	UFUNCTION(BlueprintCallable, meta = (DisplayName = "FinishSuccess"))
+	static void K2_IncomingRequestFinishSuccessJSON(const FJwRpcIncomingRequest& request, const UJsonValue* result);
+
 
 	/*
 	ends all pending requests and closes the connection.
@@ -145,27 +217,10 @@ public:
 	void Close(int Code = 1000, FString Reason = "");
 
 
-	struct FMethodData
-	{
-		FNotifyCallbackBase NotifyCB;
-		FRequestCallbackBase RequestCB;
-		FNotificationDD BPNotifyCB;
-		FRequestDD	BPRequestCB;
-		bool bIsNotification; //whether its notification of request 
-	};
 
-	/*
-	all the registered methods that other side can send us
-	*/
-	TMap<FString, FMethodData> RegisteredCallbacks;
 
-	void RegisterNotificationCallback(const FString& method, FNotifyCallbackBase callback);
-	void RegisterRequestCallback(const FString& method, FRequestCallbackBase callback);
 
-	UFUNCTION(BlueprintCallable)
-	void RegisterNotificationCallback(const FString& method, FNotificationDD callback);
-	UFUNCTION(BlueprintCallable)
-	void RegisterRequestCallback(const FString& method, FRequestDD callback);
+
 
 	UFUNCTION(BlueprintPure)
 	bool IsConnected() const;
@@ -175,12 +230,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void Send(const FString& data);
 
-	UFUNCTION(BlueprintCallable, meta = (DisplayName = "FinishError"))
-	static void IncomingRequestFinishError(const FJwRpcIncomingRequest& request, const FJwRPCError& error);
-	UFUNCTION(BlueprintCallable, meta = (DisplayName = "FinishSuccess"))
-	static void IncomingRequestFinishSuccess(const FJwRpcIncomingRequest& request, const FString& result);
-	UFUNCTION(BlueprintCallable, meta=(DisplayName="FinishSuccess"))
-	static void IncomingRequestFinishSuccessJSON(const FJwRpcIncomingRequest& request, const UJsonValue* result);
+
 
 	//static UJwRpcConnection* Connect(const FString& url, TFunction<void()> onSucess, TFunction<void(const FString&)> onError);
 
@@ -189,7 +239,7 @@ public:
 
 
 	UFUNCTION(BlueprintCallable,meta=(DeterminesOutputType="connectionClass"))
-	static UJwRpcConnection* CreateAndConnect(const FString& url, TSubclassOf<UJwRpcConnection> connectionClass);
+	static UJwRpcConnection* CreateAndConnect(const FString& URL, TSubclassOf<UJwRpcConnection> connectionClass);
 
 	//template version for c++
 	template <class TConnectionClass > static TConnectionClass* CreateAndConnect(const FString& url)
@@ -268,6 +318,21 @@ protected:
 		FSuccessCB OnResult;
 		float ExpireTime;
 	};
+
+	struct FMethodData
+	{
+		FNotifyCB NotifyCB;
+		FRequestCB RequestCB;
+		FNotificationDD BPNotifyCB;
+		FRequestDD	BPRequestCB;
+		bool bIsNotification; //whether its notification of request 
+	};
+
+	/*
+	all the registered methods that other side can send us
+	*/
+	TMap<FString, FMethodData> RegisteredCallbacks;
+
 	//requests waiting for respond
 	TMap<FString, FRequest> Requests;
 };
