@@ -1,5 +1,9 @@
 # UE4JwRPC
-UE4 JSON-RPC over Websocket
+this plugin is JSON-RPC2 over Websocket for Unreal Engine 4.
+
+its appropriate for any kind of project that needs to comunicate with a json-rpc websocket server.
+escpially if you want to write your server in nodejs since there is a [ npm library](https://github.com/UPO33/JwRPC) as well.
+
 
 
 # WIP not production ready yet !
@@ -75,6 +79,10 @@ MyGameInstance->ClientConnection = pConnection;
 # Blueprint API
 ![](/Images/Capture.JPG)
 
+
+# What kind of projects this plugin is appropriate for ?
+
+- 
 # Usage Example
 [UE4JwRPC_Example](https://github.com/UPO33/UE4JwRPC_Example)
 
@@ -85,4 +93,5 @@ MyGameInstance->ClientConnection = pConnection;
 [UE4JwRPC_Example](https://github.com/UPO33/UE4JwRPC_Example),
 [JwRPC](https://github.com/UPO33/JwRPC),
 [json rpc specification](https://www.jsonrpc.org/specification)
+
 
