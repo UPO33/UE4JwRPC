@@ -7,7 +7,8 @@ UE4 JSON-RPC over Websocket
 # Featues 
 - APIs for both blueprint and C++. one intance can be shared.
 - Bidirectional, both sides can send and recieve Request and Notification
-- auto reconnect feature
+- Auto reconnect feature
+- Available server library for nodejs
 - ...
 
 # C++ Sample Code 
