@@ -73,7 +73,7 @@ MyGameInstance->ClientConnection = pConnection;
 ```
 
 # Blueprint API
-![](\Images\Capture.JPG)
+![](/Images/Capture.JPG)
 
 # Usage Example
 [UE4JwRPC_Example](https://github.com/UPO33/UE4JwRPC_Example)
@@ -83,6 +83,6 @@ MyGameInstance->ClientConnection = pConnection;
 # See also
 [UE4JsonBP](https://github.com/UPO33/UE4JsonBP), 
 [UE4JwRPC_Example](https://github.com/UPO33/UE4JwRPC_Example),
-[JwRPC](https://github.com/UPO33/JwRPC)
- 
+[JwRPC](https://github.com/UPO33/JwRPC),
+[json rpc specification](https://www.jsonrpc.org/specification)
 
