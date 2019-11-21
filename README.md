@@ -53,20 +53,20 @@ public:
 	//this is called if server sends us 'divide' request
 	void OnRequest_Divide(TSharedPtr<FJsonValue> params, FJwRpcIncomingRequest& handle)
 	{
-		const int left = params->AsObject()->GetIntegerField("left");
-		const int right = params->AsObject()->GetIntegerField("right");
+        const int left = params->AsObject()->GetIntegerField("left");
+        const int right = params->AsObject()->GetIntegerField("right");
         //send error if its divide by zero
-		if (right == 0)
-			return handle.FinishError(666, TEXT("divide by zero"));
+        if (right == 0)
+		        return handle.FinishError(666, TEXT("divide by zero"));
         //send the result of division 
-		handle.FinishSuccess(MakeShared<FJsonValueNumber>(left / right));
+        handle.FinishSuccess(MakeShared<FJsonValueNumber>(left / right));
 	}
 };
 
 
-//we create our connection and start conecting ...
+//we create our connection and start connecting ...
 UMyConnection* pConnection = UJwRpcConnection::CreateAndConnect<UMyConnection>(TEXT("ws://localhost"));
-//the connection is closed if gets garbage collected. we keep a reference in game instance
+//the connection is closed if gets garbage collected. we keep a reference in the game instance
 MyGameInstance->ClientConnection = pConnection;
 
 ```
