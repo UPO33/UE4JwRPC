@@ -126,6 +126,34 @@ public:
 	*/
 	void Request(const FString& method, TSharedPtr<FJsonValue> params, FSuccessCB onSuccess = nullptr, FErrorCB onError = nullptr);
 	/*
+	template version that converts the result to a struct
+	*/
+	template<class TResultStruct, class TSuccess>  void Request_RS(const FString& method, const FString& params, TSuccess onSuccess, FErrorCB onError)
+	{
+		this->Request(method, params, FSuccessCB::CreateLambda([onSuccess](TSharedPtr<FJsonValue> jsResult) {
+
+			TResultStruct resultStruct;
+			if (FJsonObjectConverter::JsonObjectToUStruct<TResultStruct>(jsResult->AsObject().ToSharedRef(), &resultStruct))
+			{
+				onSuccess.ExecuteIfBound(resultStruct);
+			}
+		}), onError);
+	}
+	/*
+	template version that converts the result to a struct
+	*/
+	template<class TResultStruct, class TSuccess>  void Request_RS(const FString& method, TSharedPtr<FJsonValue> params, TSuccess onSuccess, FErrorCB onError)
+	{
+		this->Request(method, params, FSuccessCB::CreateLambda([onSuccess](TSharedPtr<FJsonValue> jsResult) {
+
+			TResultStruct resultStruct;
+			if (FJsonObjectConverter::JsonObjectToUStruct<TResultStruct>(jsResult->AsObject().ToSharedRef(), &resultStruct))
+			{
+				onSuccess.ExecuteIfBound(resultStruct);
+			}
+		}), onError);
+	}
+	/*
 	send a notification to server.
 	*/
 	void Notify(const FString& method, const FString& params);
