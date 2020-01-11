@@ -348,21 +348,21 @@ void UJwRpcConnection::OnMessage(const FString& data)
 			return;
 		}
 
+		FRequest requestCopied = *pRequest;
 
 		if (JsonObject->HasField(STR_error)) //is it error respond?
 		{
-			if (pRequest->OnError.IsBound())
+			if (requestCopied.OnError.IsBound())
 			{
 				FJwRPCError errStruct = JsonToJwError(JsonObject->GetObjectField(STR_error));
-				pRequest->OnError.Execute(errStruct);
+				requestCopied.OnError.Execute(errStruct);
 			}
 		}
 		else if (JsonObject->HasField(STR_result)) //is it valid respond?
 		{
-			if (pRequest->OnResult.IsBound())
+			if (requestCopied.OnResult.IsBound())
 			{
-				pRequest->OnResult.Execute(JsonObject->TryGetField(STR_result));
-				pRequest->OnResult = nullptr;
+				requestCopied.OnResult.Execute(JsonObject->TryGetField(STR_result));
 			}
 		}
 
