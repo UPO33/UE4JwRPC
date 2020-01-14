@@ -6,8 +6,8 @@ public class JwRPC : ModuleRules
 {
 	public JwRPC(ReadOnlyTargetRules Target) : base(Target)
 	{
-		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
-        bFasterWithoutUnity = true;
+        PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+        //bFasterWithoutUnity = true;
 		
 		PrivateIncludePaths.AddRange(
 			new string[] {

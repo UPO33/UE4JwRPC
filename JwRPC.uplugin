@@ -13,11 +13,17 @@
 	"CanContainContent": true,
 	"IsBetaVersion": true,
 	"Installed": false,
-	"Modules": [
+  "Modules": [
+    {
+      "Name": "JwRPC",
+      "Type": "Runtime",
+      "LoadingPhase": "Default"
+    },
+  ],
+  "Plugins": [
 		{
-			"Name": "JwRPC",
-			"Type": "Runtime",
-			"LoadingPhase": "Default"
-		},
+			"Name": "JsonBP",
+			"Enabled": true
+		}
 	]
 }
