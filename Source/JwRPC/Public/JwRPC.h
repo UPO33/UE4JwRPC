@@ -139,9 +139,6 @@ public:
 			}
 		}), onError);
 	}
-	/*
-	template version that converts the result to a struct
-	*/
 	template<class TResultStruct, class TSuccess>  void Request_RS(const FString& method, TSharedPtr<FJsonValue> params, TSuccess onSuccess, FErrorCB onError)
 	{
 		this->Request(method, params, FSuccessCB::CreateLambda([onSuccess](TSharedPtr<FJsonValue> jsResult) {
@@ -151,6 +148,21 @@ public:
 			{
 				onSuccess.ExecuteIfBound(resultStruct);
 			}
+		}), onError);
+	}
+	/*
+	for those who have no result
+	*/
+	void Request_RE(const FString& method, const FString& params, FEmptyCB onSuccess, FErrorCB onError)
+	{
+		this->Request(method, params, FSuccessCB::CreateLambda([onSuccess](TSharedPtr<FJsonValue> jsResult) {
+			onSuccess.ExecuteIfBound();
+		}), onError);
+	}
+	void Request_RE(const FString& method, TSharedPtr<FJsonValue> params, FEmptyCB onSuccess, FErrorCB onError)
+	{
+		this->Request(method, params, FSuccessCB::CreateLambda([onSuccess](TSharedPtr<FJsonValue> jsResult) {
+			onSuccess.ExecuteIfBound();
 		}), onError);
 	}
 	/*
