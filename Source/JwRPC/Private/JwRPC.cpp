@@ -268,7 +268,7 @@ UJwRpcConnection* UJwRpcConnection::CreateAndConnect(const FString& url, TSubcla
 
 void UJwRpcConnection::OnConnected(bool bReconnect)
 {
-	UE_LOG(LogJwRPC, Log, TEXT("UJwRpcConnection::OnConnectionError bReconnect:%d"), bReconnect);
+	UE_LOG(LogJwRPC, Log, TEXT("UJwRpcConnection::OnConnected bReconnect:%d"), bReconnect);
 
 	K2_OnConnected(bReconnect);
 }
