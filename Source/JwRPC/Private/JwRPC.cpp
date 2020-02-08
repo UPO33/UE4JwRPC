@@ -269,7 +269,8 @@ UJwRpcConnection* UJwRpcConnection::CreateAndConnect(const FString& url, TSubcla
 void UJwRpcConnection::OnConnected(bool bReconnect)
 {
 	UE_LOG(LogJwRPC, Log, TEXT("UJwRpcConnection::OnConnected bReconnect:%d"), bReconnect);
-
+	
+	OnConnectedEvent.ExecuteIfBound(bReconnect);
 	K2_OnConnected(bReconnect);
 }
 
@@ -279,6 +280,8 @@ void UJwRpcConnection::OnConnectionError(const FString& error, bool bReconnect)
 
 	LastConnectionErrorTime = TimeSinceStart;
 	bConnecting = false;
+
+	OnConnectionErrorEvent.ExecuteIfBound(error, bReconnect);
 	K2_OnConnectionError(error, bReconnect);
 }
 
@@ -396,6 +399,7 @@ void UJwRpcConnection::OnClosed(int32 StatusCode, const FString& Reason, bool bW
 
 	KillAll(FJwRPCError::NoConnection);
 
+	OnClosedEvent.ExecuteIfBound(StatusCode, Reason, bWasClean);
 	K2_OnClosed(StatusCode, Reason, bWasClean);
 
 	

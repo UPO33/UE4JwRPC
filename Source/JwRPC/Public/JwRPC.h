@@ -301,6 +301,15 @@ public:
 	*/
 	virtual void OnClosed(int32 StatusCode, const FString& Reason, bool bWasClean);
 
+
+	DECLARE_DELEGATE_OneParam(FOnConnected, bool /*bReconnect*/)
+	DECLARE_DELEGATE_TwoParams(FOnConnectionError, const FString& /*error*/, bool /*bReconnect*/);
+	DECLARE_DELEGATE_ThreeParams(FOnClosed, int32 /*StatusCode*/, const FString& /*Reason*/, bool /*bWasClean*/);
+
+	FOnClosed OnClosedEvent;
+	FOnConnected OnConnectedEvent;
+	FOnConnectionError OnConnectionErrorEvent;
+
 	UFUNCTION(BlueprintImplementableEvent, meta=(DisplayName="OnConnected"))
 	void K2_OnConnected(bool bReconnect);
 	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "OnConnectionError"))
