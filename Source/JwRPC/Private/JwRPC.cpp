@@ -555,3 +555,5 @@ void FJwRpcIncomingRequest::FinishSuccess(const FString& result) const
 //#TODO needs valid code
 FJwRPCError FJwRPCError::Timeout{ -1, FString("timeout") };
 FJwRPCError FJwRPCError::NoConnection{-2, FString("no connection") };
+
+FJwRPCError FJwRPCError::NoError{0, FString() };

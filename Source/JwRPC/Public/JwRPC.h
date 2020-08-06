@@ -36,6 +36,8 @@ struct JWRPC_API FJwRPCError
 	UPROPERTY(BlueprintReadWrite)
 	FString Message;
 
+	static FJwRPCError NoError;
+
 	static FJwRPCError ParseError;
 	static FJwRPCError InvalidRequest;
 	static FJwRPCError MethodNotFound;
