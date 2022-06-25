@@ -29,10 +29,10 @@ public:
 USTRUCT(BlueprintType)
 struct JWRPC_API FJwRPCError
 {
-	GENERATED_BODY()
+	GENERATED_USTRUCT_BODY()
 	
 	UPROPERTY(BlueprintReadWrite)
-	int Code;
+	int Code = 0;
 	UPROPERTY(BlueprintReadWrite)
 	FString Message;
 
